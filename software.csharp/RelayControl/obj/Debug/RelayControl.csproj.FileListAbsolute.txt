@@ -1,0 +1,11 @@
+E:\github\RelayControler\RelayControl\RelayControl\bin\Debug\RelayControl.exe.config
+E:\github\RelayControler\RelayControl\RelayControl\bin\Debug\RelayControl.exe
+E:\github\RelayControler\RelayControl\RelayControl\bin\Debug\RelayControl.pdb
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\RelayControl.csprojResolveAssemblyReference.cache
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\Window1.baml
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\Window1.g.cs
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\App.g.cs
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\RelayControl_MarkupCompile.cache
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\RelayControl.g.resources
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\RelayControl.exe
+E:\github\RelayControler\RelayControl\RelayControl\obj\Debug\RelayControl.pdb
