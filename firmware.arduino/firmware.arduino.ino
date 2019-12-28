@@ -5,15 +5,13 @@ int    dataPin     =    11;
 int    baudRate    = 19200;
 int    stimeOut    =    50;
 int    channel     =     6;
-int    switchState =     0;
+String switchState = "N/A";
 
 void setup(){
     set_serial(baudRate, stimeOut);
     set_pin(latchPin, clockPin, dataPin);
     print(device_status());
-
 }
-
 
 void set_pin(int latchpin, int clockpin, int datapin){
     pinMode(latchPin, OUTPUT);
@@ -38,10 +36,7 @@ String device_status(){
         "to get more functions, please use 'help' command\n";
 }
 
-void loop(){
-    ParseSerial();
-}
-
+void loop(){ParseSerial();}
 
 void ParseSerial(){
     if (Serial.available()> 0){
@@ -51,26 +46,30 @@ void ParseSerial(){
     }
 }
 void ParseCommand(String command){
-    int  result  =     0;
     bool valid   = false;
-    
-    if (command.length() == (channel+2) and command[0]=='[' and command[command.length()-1]==']'){
-        result = BinStringToDec(command.substring(1,command.length()-1 ));
-        valid = (result == -1) ? false : true;
-    }
 
     if ( command == "device_status"){valid = true; print(device_status());}
     
     if ( command.substring(0, 11) == "set_relay ["  and  command[command.length()-1]==']'){
-        result = BinStringToDec(command.substring(11,command.length()-1 ));
-        valid = (result == -1) ? false : true;
+        String bin_state   = command.substring(11,command.length()-1 );
+        int       result   = BinStringToDec(bin_state);
+        switchState        = (result == -1) ? switchState : bin_state;
+        valid              = (result == -1) ? false : true;
+        set_relay(result);
+    } 
+    
+    if ( command.substring(0, 10) == "relay_debug"){
+        String bin_state   = command.substring(11,command.length()-1 );
+        int       result   = bin_state.toInt();
+        valid              = (result < 0) ? false : true;
+        set_relay(result);
     } 
     
     if ( command.substring(0, 11) == "set_channel" ){
         int swchannel = command.substring(12, command.length()).toInt();
         if ( swchannel>0 and swchannel<=32 ){ valid = true; channel = swchannel;}
-    }    
-
+    }   
+     
     if ( command.substring(0, 15) == "set_serial_rate" ){
         int rate = command.substring(16, command.length()).toInt();
         if ( rate>0 ){ valid = true; baudRate = rate; set_serial(baudRate, stimeOut);}
@@ -88,6 +87,7 @@ void ParseCommand(String command){
           " get device status:       device_status;\n" +
           " set relay state:         set_relay [111011];\n" +
           " set relay channel count: set_channel 1~32;\n" +
+          " set relay debug:         relay_debug 256;\n" +          
           " set COM bual rate:       set_serial_rate 300~19200;\n"+
           " set COM time out:        set_serial_timeout >0;\n");
     }
@@ -105,14 +105,23 @@ int BinStringToDec(String bin_str){
         if ( bin_digit == 1 or bin_digit == 0){
             int power  = -1 * (i - (int)bin_str.length()+1);
             int decval = bin_digit * (int)(pow(2, power)+0.5);
-            result += decval;
-            print("i:" + String(i) + " digi:" + String(bin_digit) + " data:" + String(decval) + " power:" + String(power));            
+            result += decval;        
         }else{
             break;
         }
     }
-    print(result);
     return result;
+}
+
+void set_relay(int relay_state){
+    if( relay_state >= 0){
+        for (int numberToDisplay = 0; numberToDisplay < 256; numberToDisplay++) {
+            digitalWrite(latchPin, LOW);                         //latch low before transmiting
+            shiftOut(dataPin, clockPin, MSBFIRST, numberToDisplay);  //shiftout data
+            digitalWrite(latchPin, HIGH);                        //latch heigh after transmiting
+            delay(500);
+        }
+    }
 }
 
 void print(const char*  s){ Serial.println(String(s));}
