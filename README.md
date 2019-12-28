@@ -1,2 +1,2 @@
-# RelayControler
-32 channel Relay Controler
+# Relay Controller
+32 Channel Relay Controller
