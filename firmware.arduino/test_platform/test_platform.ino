@@ -16,37 +16,18 @@ void setup() {
 
 void loop() {
   // 在 8 顆 LED 上計數數字，從 0 計數到 255
-  for (int numberToDisplay = 0; numberToDisplay < 256; numberToDisplay++) {
+  for (int numberToDisplay = 0; numberToDisplay < 8; numberToDisplay++) {
     // 送資料前要先把 latchPin 拉成低電位
     digitalWrite(latchPin, LOW);
     
     // 使用 shiftOut 函式送出資料
-    shiftOut(dataPin, clockPin, MSBFIRST, 0);  
+    shiftOut(dataPin, clockPin, MSBFIRST, numberToDisplay);  
 
     // 送完資料後要把 latchPin 拉回成高電位
     digitalWrite(latchPin, HIGH);
     
     // 隔 500ms 後換下一個數字
-    delay(500);
-    digitalWrite(latchPin, LOW);
-    
-    // 使用 shiftOut 函式送出資料
-    shiftOut(dataPin, clockPin, MSBFIRST, 128);  
+    delay(100);
 
-    // 送完資料後要把 latchPin 拉回成高電位
-    digitalWrite(latchPin, HIGH);
-    
-    // 隔 500ms 後換下一個數字
-    delay(500);    
-    digitalWrite(latchPin, LOW);
-    
-    // 使用 shiftOut 函式送出資料
-    shiftOut(dataPin, clockPin, MSBFIRST, 256);  
-
-    // 送完資料後要把 latchPin 拉回成高電位
-    digitalWrite(latchPin, HIGH);
-    
-    // 隔 500ms 後換下一個數字
-    delay(500);    
   }
 }

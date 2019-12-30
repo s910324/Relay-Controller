@@ -10,6 +10,7 @@ String switchState = "N/A";
 void setup(){
     set_serial(baudRate, stimeOut);
     set_pin(latchPin, clockPin, dataPin);
+    set_relay(0);
     print(device_status());
 }
 
@@ -42,12 +43,11 @@ void ParseSerial(){
     if (Serial.available()> 0){
         String command = Serial.readString();
         command.replace("\n", ""); command.trim(); command.toLowerCase(); command = String(command);
-        ParseCommand(command);
+        DispatchCommand(command);
     }
 }
-void ParseCommand(String command){
+void DispatchCommand(String command){
     bool valid   = false;
-
     if ( command == "device_status"){valid = true; print(device_status());}
     
     if ( command.substring(0, 11) == "set_relay ["  and  command[command.length()-1]==']'){
@@ -58,28 +58,18 @@ void ParseCommand(String command){
         set_relay(result);
     } 
     
-    if ( command.substring(0, 10) == "relay_debug"){
-        String bin_state   = command.substring(11,command.length()-1 );
-        int       result   = bin_state.toInt();
-        valid              = (result < 0) ? false : true;
-        set_relay(result);
-    } 
+    int result = ParseCommand( "relay_debug", command);
+    if ( result>=0 ){ valid = true; set_relay(result);}
     
-    if ( command.substring(0, 11) == "set_channel" ){
-        int swchannel = command.substring(12, command.length()).toInt();
-        if ( swchannel>0 and swchannel<=32 ){ valid = true; channel = swchannel;}
-    }   
-     
-    if ( command.substring(0, 15) == "set_serial_rate" ){
-        int rate = command.substring(16, command.length()).toInt();
-        if ( rate>0 ){ valid = true; baudRate = rate; set_serial(baudRate, stimeOut);}
-    }
+    int swchannel = ParseCommand( "set_channel", command);
+    if ( swchannel>0 and swchannel<=32 ){ valid = true; channel = swchannel;}
+
+    int rate = ParseCommand( "set_serial_rate", command);
+    if ( rate > 0 ){ valid = true; baudRate = rate; set_serial(baudRate, stimeOut);}
     
-    if ( command.substring(0, 18) == "set_serial_timeout" ){
-        int timeout = command.substring(19, command.length()).toInt();
-        if ( timeout>0 ){ valid = true; stimeOut = timeout; set_serial(baudRate, stimeOut);}
-    }
-    
+    int timeout = ParseCommand( "set_serial_timeout", command);
+    if ( timeout > 0 ){ valid = true; stimeOut = timeout; set_serial(baudRate, stimeOut);}
+
     if ( command.substring(0, 4) == "help" ){
         valid = true; print(
           String("\n") +
@@ -92,8 +82,23 @@ void ParseCommand(String command){
           " set COM time out:        set_serial_timeout >0;\n");
     }
       
-    if (valid){print("command:" + command + "\n");}
-    else { print("invalid command: " + command + "\n" ); }
+    if (valid){print("command:" + command + "\n");} else { print("invalid command: " + command + "\nto get more functions, please use 'help' command\n"); }
+}
+
+void set_relay(int relay_state){
+    if( relay_state >= 0){
+            digitalWrite(latchPin, LOW);                         //latch low before transmiting
+            shiftOut(dataPin, clockPin, MSBFIRST, relay_state);  //shiftout data
+            digitalWrite(latchPin, HIGH);                        //latch heigh after transmiting
+    }
+}
+
+int ParseCommand(String target, String command){
+    int result = -1;
+    if (command.substring(0, target.length()) == target){
+        result = command.substring(target.length()+1, command.length()).toInt();
+    }
+    return result;
 }
 
 int BinStringToDec(String bin_str){
@@ -113,16 +118,6 @@ int BinStringToDec(String bin_str){
     return result;
 }
 
-void set_relay(int relay_state){
-    if( relay_state >= 0){
-        for (int numberToDisplay = 0; numberToDisplay < 256; numberToDisplay++) {
-            digitalWrite(latchPin, LOW);                         //latch low before transmiting
-            shiftOut(dataPin, clockPin, MSBFIRST, numberToDisplay);  //shiftout data
-            digitalWrite(latchPin, HIGH);                        //latch heigh after transmiting
-            delay(500);
-        }
-    }
-}
 
 void print(const char*  s){ Serial.println(String(s));}
 void print(String       s){ Serial.println(s);}
