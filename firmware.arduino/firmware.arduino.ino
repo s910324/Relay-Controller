@@ -6,24 +6,9 @@ int    baudRate    =  19200;
 int    stimeOut    =     50;
 String switchState =  "N/A";
 
-void setup(){
-    set_serial(baudRate, stimeOut);
-    set_pin(latchPin, clockPin, dataPin);
-    set_relay(0);
-    print(device_status());
-}
-
-void set_pin(int latchpin, int clockpin, int datapin){
-    pinMode(latchPin, OUTPUT);
-    pinMode(clockPin, OUTPUT);
-    pinMode(dataPin,  OUTPUT);
-}
-
-void set_serial(int rate, int timeout){
-    Serial.begin(rate);
-    Serial.setTimeout(timeout);
-    while (!Serial) {;}
-}
+void      setup(){set_serial(baudRate, stimeOut); set_pin(latchPin, clockPin, dataPin); print(device_status());}
+void    set_pin(int latchpin, int clockpin, int datapin){ pinMode(latchPin, OUTPUT); pinMode(clockPin, OUTPUT); pinMode(dataPin,  OUTPUT); }
+void set_serial(int rate, int timeout){Serial.begin(rate); Serial.setTimeout(timeout); while (!Serial) {;}}
 
 String device_status(){
     return 
@@ -44,6 +29,7 @@ void ParseSerial(){
         DispatchCommand(command);
     }
 }
+
 void DispatchCommand(String command){
     bool valid   = false;
     if ( command == "device_status"){valid = true; print(device_status());}
@@ -55,10 +41,8 @@ void DispatchCommand(String command){
 
         if (valid){
             digitalWrite(latchPin, LOW);
-            print(bin_state);
             int zfill = (bin_state.length() % 8) == 0 ? 0 : (bin_state.length() % 8);
             for (int i = 0; i < zfill; i++){bin_state = "0" + bin_state;}
-            print(bin_state);
             for (int i = 0; i < (bin_state.length() / 8); i++){
                 int relay_state = BinStringToDec(bin_state.substring(i*8,(i+1)*8));
                 shiftOut(dataPin, clockPin, MSBFIRST, relay_state);
@@ -81,8 +65,7 @@ void DispatchCommand(String command){
           String("\n") +
           "commands:\n" + 
           " get device status:       device_status;\n" +
-          " set relay state:         set_relay [111011];\n" +
-          " set relay channel count: set_channel 1~32;\n" +
+          " set relay state:         set_relay [00111011];\n" +
           " set relay debug:         relay_debug 256;\n" +          
           " set COM bual rate:       set_serial_rate 300~19200;\n"+
           " set COM time out:        set_serial_timeout >0;\n");
@@ -91,20 +74,16 @@ void DispatchCommand(String command){
     if (valid){print("command:" + command + "\n");} else { print("invalid command: " + command + "\nto get more functions, please use 'help' command\n"); }
 }
 
-void set_relay(int relay_state){
-    if( relay_state >= 0){
-
-            digitalWrite(latchPin, LOW);                         //latch low before transmiting
-            shiftOut(dataPin, clockPin, MSBFIRST, relay_state);  //shiftout data
-            digitalWrite(latchPin, HIGH);                        //latch heigh after transmiting
+void set_relay(int relay_state){if( relay_state >= 0){
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, MSBFIRST, relay_state); 
+        digitalWrite(latchPin, HIGH);
     }
 }
 
 int ParseCommand(String target, String command){
     int result = -1;
-    if (command.substring(0, target.length()) == target){
-        result = command.substring(target.length()+1, command.length()).toInt();
-    }
+    if (command.substring(0, target.length()) == target){result = command.substring(target.length()+1, command.length()).toInt();}
     return result;
 }
 
