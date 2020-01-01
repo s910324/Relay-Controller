@@ -1,11 +1,11 @@
-String deviceName  = "Relay Controller";
-int    latchPin    =     8;
-int    clockPin    =    12;
-int    dataPin     =    11;
-int    baudRate    = 19200;
-int    stimeOut    =    50;
-int    channel     =     6;
-String switchState = "N/A";
+ String deviceName  = "Relay Controller";
+int    latchPin    =      8;
+int    clockPin    =     12;
+int    dataPin     =     11;
+int    baudRate    =  19200;
+int    stimeOut    =     50;
+int    channel     =      8;
+String switchState =  "N/A";
 
 void setup(){
     set_serial(baudRate, stimeOut);
@@ -117,6 +117,7 @@ int BinStringToDec(String bin_str){
     }
     return result;
 }
+
 
 
 void print(const char*  s){ Serial.println(String(s));}
