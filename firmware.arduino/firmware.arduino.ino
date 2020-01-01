@@ -4,7 +4,6 @@ int    clockPin    =     12;
 int    dataPin     =     11;
 int    baudRate    =  19200;
 int    stimeOut    =     50;
-int    channel     =      8;
 String switchState =  "N/A";
 
 void setup(){
@@ -32,7 +31,6 @@ String device_status(){
         "device name:    " + String(deviceName) +"\n"+
         "buad rate:      " + String(baudRate)   +"\n"+
         "port timeout:   " + String(stimeOut)   +"\n"+
-        "switch channel: " + String(channel)    +"\n"+
         "switch state:   " + String(switchState)+"\n"+
         "to get more functions, please use 'help' command\n";
 }
@@ -51,18 +49,26 @@ void DispatchCommand(String command){
     if ( command == "device_status"){valid = true; print(device_status());}
     
     if ( command.substring(0, 11) == "set_relay ["  and  command[command.length()-1]==']'){
-        String bin_state   = command.substring(11,command.length()-1 );
-        int       result   = BinStringToDec(bin_state);
-        switchState        = (result == -1) ? switchState : bin_state;
-        valid              = (result == -1) ? false : true;
-        set_relay(result);
+        valid              = true;
+        String bin_state   = command.substring(11,command.length()-1 ); bin_state.replace(" ", ""); bin_state.replace("_", "");
+        for (int i = 0; i < bin_state.length(); i++){ if ( bin_state[i] != '1' and bin_state[i] != '0' ) {valid = false; break;}}
+
+        if (valid){
+            digitalWrite(latchPin, LOW);
+            print(bin_state);
+            int zfill = (bin_state.length() % 8) == 0 ? 0 : (bin_state.length() % 8);
+            for (int i = 0; i < zfill; i++){bin_state = "0" + bin_state;}
+            print(bin_state);
+            for (int i = 0; i < (bin_state.length() / 8); i++){
+                int relay_state = BinStringToDec(bin_state.substring(i*8,(i+1)*8));
+                shiftOut(dataPin, clockPin, MSBFIRST, relay_state);
+            }
+            digitalWrite(latchPin, HIGH); 
+        }
     } 
     
     int result = ParseCommand( "relay_debug", command);
     if ( result>=0 ){ valid = true; set_relay(result);}
-    
-    int swchannel = ParseCommand( "set_channel", command);
-    if ( swchannel>0 and swchannel<=32 ){ valid = true; channel = swchannel;}
 
     int rate = ParseCommand( "set_serial_rate", command);
     if ( rate > 0 ){ valid = true; baudRate = rate; set_serial(baudRate, stimeOut);}
@@ -87,6 +93,7 @@ void DispatchCommand(String command){
 
 void set_relay(int relay_state){
     if( relay_state >= 0){
+
             digitalWrite(latchPin, LOW);                         //latch low before transmiting
             shiftOut(dataPin, clockPin, MSBFIRST, relay_state);  //shiftout data
             digitalWrite(latchPin, HIGH);                        //latch heigh after transmiting
