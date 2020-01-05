@@ -1,11 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: rawr
- * Date: 2019/12/25
- * Time: 上午 1:07
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
+﻿   
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -20,12 +13,11 @@ using System.IO.Ports;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading;
+using UI;
 
 namespace RelayControl
 {
-	/// <summary>
-	/// Interaction logic for Window1.xaml
-	/// </summary>
+     
 	public partial class Window1 : Window
 	{
 		public Window1()
@@ -43,36 +35,70 @@ namespace RelayControl
 			ComboBox   serial_select     = new ComboBox();
 			ComboBox   bual_select       = new ComboBox();
 			Button     serial_confirm_pb = new Button();
-			TabControl tab_page          = new TabControl();
-			Grid       main_grid         = new Grid();
-			Grid       serial_grid       = new Grid();
-						
-			main_grid.ColumnDefinitions.Add(new ColumnDefinition());		  
-			main_grid.RowDefinitions.Add(new RowDefinition());
-			main_grid.RowDefinitions.Add(new RowDefinition());
-			main_grid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Auto);
-			main_grid.RowDefinitions[1].Height = new GridLength(1, GridUnitType.Star);
-
-			serial_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_grid.RowDefinitions.Add(new RowDefinition());
+			ListView   serial_log_list   = new ListView();
+			TextBox    serial_input      = new TextBox();
+			Button     serial_send_pb    = new Button();
 			
-			Grid.SetRow(serial_grid, 0);
-			Grid.SetColumn(serial_grid, 0);
-			main_grid.Children.Add(serial_grid); 
+			Grid       serial_port_grid  = new Grid();
+			Grid       serial_send_grid  = new Grid();
+			VBox       main_grid         = new VBox(serial_port_grid, serial_log_list, serial_send_grid);
+			
+//			main_grid.ColumnDefinitions.Add(new ColumnDefinition());		  
+//			main_grid.RowDefinitions.Add(new RowDefinition());
+//			main_grid.RowDefinitions.Add(new RowDefinition());
+//			main_grid.RowDefinitions.Add(new RowDefinition());
+//			main_grid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Auto);
+//			main_grid.RowDefinitions[1].Height = new GridLength(1, GridUnitType.Star);
+//			main_grid.RowDefinitions[2].Height = new GridLength(1, GridUnitType.Auto);
+
+
+			serial_port_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_port_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_port_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_port_grid.RowDefinitions.Add(new RowDefinition());
+    
+			
+			serial_send_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_send_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_send_grid.RowDefinitions.Add(new RowDefinition());
+			serial_send_grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Auto);
+  
+			
+//			Grid.SetRow(serial_port_grid, 0);
+//			Grid.SetColumn(serial_port_grid, 0);
+//			main_grid.Children.Add(serial_port_grid); 
+
+//			Grid.SetRow(serial_log_list, 1);
+//			Grid.SetColumn(serial_log_list, 0);
+//			serial_log_list.Margin =  new Thickness(3, 3, 3, 3);
+//			main_grid.Children.Add(serial_log_list);
+			
+//			Grid.SetRow(serial_send_grid, 2);
+//			Grid.SetColumn(serial_send_grid, 0);
+//			main_grid.Children.Add(serial_send_grid); 
 			
 			Grid.SetRow(serial_select, 0);
 			Grid.SetColumn(serial_select, 0);
-			serial_grid.Children.Add(serial_select);
+			serial_select.Margin =  new Thickness(3, 3, 3, 3);
+			serial_port_grid.Children.Add(serial_select);
 			
 			Grid.SetRow(bual_select, 0);
 			Grid.SetColumn(bual_select, 1);
-			serial_grid.Children.Add(bual_select);
+			bual_select.Margin =  new Thickness(3, 3, 3, 3);
+			serial_port_grid.Children.Add(bual_select);
 			
 			Grid.SetRow(serial_confirm_pb, 0);
 			Grid.SetColumn(serial_confirm_pb, 2);
-			serial_grid.Children.Add(serial_confirm_pb);
+			serial_confirm_pb.Margin =  new Thickness(3, 3, 3, 3);
+			serial_port_grid.Children.Add(serial_confirm_pb);
+			
+			Grid.SetRow(serial_input, 0);
+			Grid.SetColumn(serial_input, 0);
+			serial_send_grid.Children.Add(serial_input); 
+			
+			Grid.SetRow(serial_send_pb, 0);
+			Grid.SetColumn(serial_send_pb, 1);
+			serial_send_grid.Children.Add(serial_send_pb); 			
 			
 			List<PortComboData> devices     = GetSerialDevices();
 			serial_select.ItemsSource       = devices;
@@ -85,6 +111,7 @@ namespace RelayControl
 			bual_select.SelectedValuePath   = "Id";
 			
 			serial_confirm_pb.Content       = "select";
+			serial_send_pb.Content          = "Send";
 			
 			int i = 0;
 			foreach (int rate in new int[] {2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600}){
