@@ -19,6 +19,7 @@ using System.Windows.Media;
 using System.IO.Ports;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace RelayControl
 {
@@ -32,37 +33,58 @@ namespace RelayControl
 			InitializeComponent();
 			
 			InitializeUserInterface();
+//			SerialConnection n = new SerialConnection("COM4", 19200) ;
 
 			
 		}
 		
 	
 		public void InitializeUserInterface(){
-			ComboBox serial_select = new ComboBox();
-			ComboBox bual_select   = new ComboBox();
-			Grid     main_grid     = new Grid();
-			main_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			main_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			ComboBox   serial_select     = new ComboBox();
+			ComboBox   bual_select       = new ComboBox();
+			Button     serial_confirm_pb = new Button();
+			TabControl tab_page          = new TabControl();
+			Grid       main_grid         = new Grid();
+			Grid       serial_grid       = new Grid();
+						
+			main_grid.ColumnDefinitions.Add(new ColumnDefinition());		  
 			main_grid.RowDefinitions.Add(new RowDefinition());
 			main_grid.RowDefinitions.Add(new RowDefinition());
+			main_grid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Auto);
+			main_grid.RowDefinitions[1].Height = new GridLength(1, GridUnitType.Star);
+
+			serial_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_grid.ColumnDefinitions.Add(new ColumnDefinition());
+			serial_grid.RowDefinitions.Add(new RowDefinition());
+			
+			Grid.SetRow(serial_grid, 0);
+			Grid.SetColumn(serial_grid, 0);
+			main_grid.Children.Add(serial_grid); 
 			
 			Grid.SetRow(serial_select, 0);
 			Grid.SetColumn(serial_select, 0);
-			main_grid.Children.Add(serial_select);
+			serial_grid.Children.Add(serial_select);
 			
 			Grid.SetRow(bual_select, 0);
 			Grid.SetColumn(bual_select, 1);
-			main_grid.Children.Add(bual_select);
+			serial_grid.Children.Add(bual_select);
 			
-			List<PortComboData> devices  = GetSerialDevices();
-			serial_select.ItemsSource = devices;
+			Grid.SetRow(serial_confirm_pb, 0);
+			Grid.SetColumn(serial_confirm_pb, 2);
+			serial_grid.Children.Add(serial_confirm_pb);
+			
+			List<PortComboData> devices     = GetSerialDevices();
+			serial_select.ItemsSource       = devices;
 			serial_select.DisplayMemberPath = "Display";
 			serial_select.SelectedValuePath = "Id";
 			
-			List<BualComboData> bualrates = new List<BualComboData>();
-			bual_select.ItemsSource = bualrates;
-			bual_select.DisplayMemberPath = "Display";
-			bual_select.SelectedValuePath = "Id";
+			List<BualComboData> bualrates   = new List<BualComboData>();
+			bual_select.ItemsSource         = bualrates;
+			bual_select.DisplayMemberPath   = "Display";
+			bual_select.SelectedValuePath   = "Id";
+			
+			serial_confirm_pb.Content       = "select";
 			
 			int i = 0;
 			foreach (int rate in new int[] {2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600}){
@@ -104,6 +126,8 @@ namespace RelayControl
             }
             return ListData;
 		}
+		
+   
 	}
 	
 	public class PortComboData{ 
@@ -118,6 +142,42 @@ namespace RelayControl
 		public int    Bual    { get; set; }
 		public string Status  { get; set; }
 		public string Display { get; set; }
-	} 
+	}
+	
+	public class SerialConnection{
+		private SerialPort connection;
+		static  bool       _continue;
+		
+		public  SerialConnection(string port, int bual_rate){
+			connection = new SerialPort(port, bual_rate, Parity.None, 8, StopBits.One);
+	        connection.ReadTimeout  = 500;  
+	        connection.WriteTimeout = 500; 			
+			_continue = true;
+ 
+			if(!connection.IsOpen){connection.Open(); Trace.WriteLine("open");}
+			Thread readThread = new Thread(Read);
+			readThread.Start();
+	        while (_continue){
+				connection.WriteLine("help");
+				Thread.Sleep(1000);
+	        }
+	        connection.Close();
+	        
+		}
+        
+		public  void Read(){  
+			while (_continue){  
+				try{
+					string message = connection.ReadLine();  
+					Trace.WriteLine(message);  
+				}catch (TimeoutException) { 
+		        
+		        }
+			}  
+		} 
+	}
 
+    
+	
+		
 }
