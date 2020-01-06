@@ -8,6 +8,11 @@ using System.IO.Ports;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Windows.Data;
+using System.Windows.Media;
+
+
+   
 using UI;
 
 namespace RelayControl
@@ -15,6 +20,13 @@ namespace RelayControl
      
 	public partial class Window1 : Window
 	{
+		private ComboBox   serial_select     = new ComboBox();
+		private ComboBox   bual_select       = new ComboBox();
+		private Button     serial_confirm_pb = new Button();
+		private ListView   serial_log_list   = new ListView();
+		private TextBox    serial_input      = new TextBox();
+		private Button     serial_send_pb    = new Button();
+		
 		public Window1()
 		{
 			InitializeComponent();
@@ -32,12 +44,7 @@ namespace RelayControl
 			this.Width     = 450;
 			this.Height    = 600;
 				
-			ComboBox   serial_select     = new ComboBox();
-			ComboBox   bual_select       = new ComboBox();
-			Button     serial_confirm_pb = new Button();
-			ListView   serial_log_list   = new ListView();
-			TextBox    serial_input      = new TextBox();
-			Button     serial_send_pb    = new Button();
+
 			
 			Grid       serial_port_grid  = new HBox(serial_select, bual_select,  serial_confirm_pb).setGeomertries( "*", "*", "auto").setSpacing(5);
 			Grid       serial_send_grid  = new HBox(serial_input, serial_send_pb).setGeomertries("*", "auto").setSpacing(5);
@@ -67,15 +74,52 @@ namespace RelayControl
 				});
 			}
 			SerialConnection n = new SerialConnection("COM4", 19200);
+			this.serial_log_list.ItemsSource = n.io_list;	
+			GridView gv = new GridView();
 			
-			serial_send_pb.Click += (o, a)=>{this.SerialSend(n, "help");};
-
-   
+			
+			foreach (string header in new string[] {"Id", "Status", "Time", "Data"}){
+				GridViewColumn gvc = new GridViewColumn {
+		            Header = header,
+//		            DisplayMemberBinding = new Binding(header)
+		            CellTemplate = getDataTemplate(header) 
+		        };
+				gvc.Header = header;
+ 
+				gv.Columns.Add(gvc);
+			}
+			
+			this.serial_log_list.View = gv;
+			
+			serial_send_pb.Click += (o, a)=>{this.SerialSend(n, "help"); };
+			
+	                                 
 			
 			this.Content = main_grid;
 		}
+		
+ 		private DataTemplate getDataTemplate(string bind){
+            var textBlockFactory = new FrameworkElementFactory(typeof(TextBlock));
+	        textBlockFactory.SetValue(TextBlock.TextProperty, new Binding(bind));
+	        textBlockFactory.SetValue(TextBlock.FontFamilyProperty, new FontFamily("Lucida Console"));
+//	        textBlockFactory.SetValue(TextBlock.BackgroundProperty, Brushes.Red);
+	        textBlockFactory.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(Color.FromRgb(50, 50, 50)));
+
+	
+	        textBlockFactory.SetValue(TextBlock.FontSizeProperty, 12.0);
+	
+	        var template = new DataTemplate();            
+	        template.VisualTree = textBlockFactory;
+	
+	        return template;
+ 
+
+		}
+		
      	private void SerialSend(SerialConnection conn, string command ){
 			conn.WriteLine(command);
+			
+			
 		}
    
 		private List<PortComboData> GetSerialDevices(){
@@ -105,8 +149,12 @@ namespace RelayControl
             return ListData;
 		}
 		
+    
+		
    
 	}
+	
+   
 	
 	public class PortComboData{ 
 		public int    Id      { get; set; } 
@@ -122,9 +170,17 @@ namespace RelayControl
 		public string Display { get; set; }
 	}
 	
+	public class SerialData{
+		public int    Id      { get; set; }
+		public string Status  { get; set; }
+		public string Time    { get; set; }
+		public string Data    { get; set; }
+	}
+	
 	public class SerialConnection{
-		private SerialPort connection;
-		static  bool       _continue;
+		private SerialPort        connection;
+		static  bool              _continue;
+		public  List<SerialData>  io_list = new List<SerialData>();
 		
 		public  SerialConnection(string port, int bual_rate){
 			connection = new SerialPort(port, bual_rate, Parity.None, 8, StopBits.One);
@@ -136,14 +192,18 @@ namespace RelayControl
 			Thread readThread = new Thread(this.ReadLine);
 			readThread.Start();
  
-//	        connection.Close();
-	        
 		}
         
 		public void ReadLine(){  
 			while (_continue){  
 				try{
-					string message = this.connection.ReadLine();  
+					string message = this.connection.ReadLine();
+					io_list.Add(new SerialData{
+						Id     = io_list.Count, 
+						Status = "receieve",
+						Time   = DateTime.Now.ToString("HH:mm:ss"), 
+						Data   = message
+					});
 					Trace.WriteLine(message);						  
 				}catch (TimeoutException) { 
 		        
@@ -151,7 +211,17 @@ namespace RelayControl
 			}  
 		} 
 		
-		public void WriteLine(string command){this.connection.WriteLine("help");}
+		public void WriteLine(string command){
+			this.connection.WriteLine(command); 
+			io_list.Add(new SerialData{
+				Id     = io_list.Count, 
+				Status = "send",
+				Time   = DateTime.Now.ToString("HH:mm:ss"), 
+				Data   = command
+			});
+		}
+		
+		public void Close(){this.connection.Close();}
 	}
 
     
