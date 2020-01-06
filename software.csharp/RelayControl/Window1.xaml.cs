@@ -1,14 +1,9 @@
 ﻿   
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 using System.Management;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.IO.Ports;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -25,13 +20,18 @@ namespace RelayControl
 			InitializeComponent();
 			
 			InitializeUserInterface();
-//			SerialConnection n = new SerialConnection("COM4", 19200) ;
+			
 
 			
 		}
 		
 	
 		public void InitializeUserInterface(){
+			this.MinWidth  = 400;
+			this.MinHeight = 400;
+			this.Width     = 450;
+			this.Height    = 600;
+				
 			ComboBox   serial_select     = new ComboBox();
 			ComboBox   bual_select       = new ComboBox();
 			Button     serial_confirm_pb = new Button();
@@ -39,66 +39,10 @@ namespace RelayControl
 			TextBox    serial_input      = new TextBox();
 			Button     serial_send_pb    = new Button();
 			
-			Grid       serial_port_grid  = new Grid();
-			Grid       serial_send_grid  = new Grid();
-			VBox       main_grid         = new VBox(serial_port_grid, serial_log_list, serial_send_grid);
-			
-//			main_grid.ColumnDefinitions.Add(new ColumnDefinition());		  
-//			main_grid.RowDefinitions.Add(new RowDefinition());
-//			main_grid.RowDefinitions.Add(new RowDefinition());
-//			main_grid.RowDefinitions.Add(new RowDefinition());
-//			main_grid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Auto);
-//			main_grid.RowDefinitions[1].Height = new GridLength(1, GridUnitType.Star);
-//			main_grid.RowDefinitions[2].Height = new GridLength(1, GridUnitType.Auto);
-
-
-			serial_port_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_port_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_port_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_port_grid.RowDefinitions.Add(new RowDefinition());
-    
-			
-			serial_send_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_send_grid.ColumnDefinitions.Add(new ColumnDefinition());
-			serial_send_grid.RowDefinitions.Add(new RowDefinition());
-			serial_send_grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Auto);
-  
-			
-//			Grid.SetRow(serial_port_grid, 0);
-//			Grid.SetColumn(serial_port_grid, 0);
-//			main_grid.Children.Add(serial_port_grid); 
-
-//			Grid.SetRow(serial_log_list, 1);
-//			Grid.SetColumn(serial_log_list, 0);
-//			serial_log_list.Margin =  new Thickness(3, 3, 3, 3);
-//			main_grid.Children.Add(serial_log_list);
-			
-//			Grid.SetRow(serial_send_grid, 2);
-//			Grid.SetColumn(serial_send_grid, 0);
-//			main_grid.Children.Add(serial_send_grid); 
-			
-			Grid.SetRow(serial_select, 0);
-			Grid.SetColumn(serial_select, 0);
-			serial_select.Margin =  new Thickness(3, 3, 3, 3);
-			serial_port_grid.Children.Add(serial_select);
-			
-			Grid.SetRow(bual_select, 0);
-			Grid.SetColumn(bual_select, 1);
-			bual_select.Margin =  new Thickness(3, 3, 3, 3);
-			serial_port_grid.Children.Add(bual_select);
-			
-			Grid.SetRow(serial_confirm_pb, 0);
-			Grid.SetColumn(serial_confirm_pb, 2);
-			serial_confirm_pb.Margin =  new Thickness(3, 3, 3, 3);
-			serial_port_grid.Children.Add(serial_confirm_pb);
-			
-			Grid.SetRow(serial_input, 0);
-			Grid.SetColumn(serial_input, 0);
-			serial_send_grid.Children.Add(serial_input); 
-			
-			Grid.SetRow(serial_send_pb, 0);
-			Grid.SetColumn(serial_send_pb, 1);
-			serial_send_grid.Children.Add(serial_send_pb); 			
+			Grid       serial_port_grid  = new HBox(serial_select, bual_select,  serial_confirm_pb).setGeomertries( "*", "*", "auto").setSpacing(5);
+			Grid       serial_send_grid  = new HBox(serial_input, serial_send_pb).setGeomertries("*", "auto").setSpacing(5);
+			VBox       main_grid         = new VBox(serial_port_grid, serial_log_list, serial_send_grid).setGeomertries("auto", "*", "auto").setSpacing(5).setMargin(5);
+																			  
 			
 			List<PortComboData> devices     = GetSerialDevices();
 			serial_select.ItemsSource       = devices;
@@ -122,12 +66,19 @@ namespace RelayControl
 					Display = "   "+ rate
 				});
 			}
+			SerialConnection n = new SerialConnection("COM4", 19200);
+			
+			serial_send_pb.Click += (o, a)=>{this.SerialSend(n, "help");};
+
+   
 			
 			this.Content = main_grid;
 		}
+     	private void SerialSend(SerialConnection conn, string command ){
+			conn.WriteLine(command);
+		}
    
-   
-		public List<PortComboData> GetSerialDevices(){
+		private List<PortComboData> GetSerialDevices(){
 			ManagementClass            processClass = new ManagementClass("Win32_PnPEntity");
             ManagementObjectCollection ports        = processClass.GetInstances();
             List<PortComboData>        ListData     = new List<PortComboData>();          
@@ -179,29 +130,28 @@ namespace RelayControl
 			connection = new SerialPort(port, bual_rate, Parity.None, 8, StopBits.One);
 	        connection.ReadTimeout  = 500;  
 	        connection.WriteTimeout = 500; 			
-			_continue = true;
+			_continue               = true;
  
-			if(!connection.IsOpen){connection.Open(); Trace.WriteLine("open");}
-			Thread readThread = new Thread(Read);
+			if(!connection.IsOpen){connection.Open();}
+			Thread readThread = new Thread(this.ReadLine);
 			readThread.Start();
-	        while (_continue){
-				connection.WriteLine("help");
-				Thread.Sleep(1000);
-	        }
-	        connection.Close();
+ 
+//	        connection.Close();
 	        
 		}
         
-		public  void Read(){  
+		public void ReadLine(){  
 			while (_continue){  
 				try{
-					string message = connection.ReadLine();  
-					Trace.WriteLine(message);  
+					string message = this.connection.ReadLine();  
+					Trace.WriteLine(message);						  
 				}catch (TimeoutException) { 
 		        
 		        }
 			}  
 		} 
+		
+		public void WriteLine(string command){this.connection.WriteLine("help");}
 	}
 
     
