@@ -2,16 +2,15 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.IO.Ports;
 using System.Text.RegularExpressions;                  
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
-using System.Threading;
 using System.Management;
 using UI;
+using SerialConn;
 
 namespace RelayControl
 {
@@ -22,8 +21,7 @@ namespace RelayControl
 		private ComboBox         bual_select       = new ComboBox();
 		private Button           serial_confirm_pb = new Button();
 		private ListView         serial_log_list   = new ListView();
-//		private TextBox          serial_input      = new TextBox();
-		private SubmitTextBox          serial_input      = new SubmitTextBox();
+		private SubmitTextBox    serial_input      = new SubmitTextBox();
 		private Button           serial_send_pb    = new Button();
 		private SerialConnection connection        = new SerialConnection();
 		public Window1(){
@@ -46,7 +44,7 @@ namespace RelayControl
 			this.bual_select.ItemsSource         = bualrates;
 			this.bual_select.DisplayMemberPath   = "Display";
 			this.bual_select.SelectedValuePath   = "Bual";
-			this.serial_confirm_pb.Content       = "select";
+			this.serial_confirm_pb.Content       = "Connect";
 			this.serial_send_pb.Content          = "Send";
 			
 			int i = 0;
@@ -72,12 +70,22 @@ namespace RelayControl
 			}
 			
 			this.serial_log_list.View = gv;
-			
-			connection = new SerialConnection("COM3", 19200);
-			this.serial_log_list.ItemsSource    = connection.io_list;
-			this.serial_send_pb.Click          += (o, a) => {this.SerialSend(connection, this.serial_input.Text); };
-			this.serial_confirm_pb.Click       += (o, a) => {SerialConnection n = new SerialConnection(serial_select.SelectedValue.ToString(), (int)bual_select.SelectedValue);};
-			this.serial_input.SubmitText       += (o, a) => {Trace.WriteLine(o.ToString());};
+
+			this.serial_send_pb.Click          += (o, a) => {this.SerialSend(this.connection,  this.serial_input.Text); this.serial_input.Clear();};
+			this.serial_input.SubmitText       += (o, a) => {this.SerialSend(this.connection, ((SubmitTextBox)o).Text); this.serial_input.Clear();};
+			this.serial_confirm_pb.Click       += (o, a) => {
+				if (this.connection.IsConnected){
+					this.connection.Close();
+					
+				} else {
+					this.connection = new SerialConnection(serial_select.SelectedValue.ToString(), (int)bual_select.SelectedValue);
+					this.serial_log_list.ItemsSource = this.connection.io_list;
+				}
+				this.serial_select.IsEnabled = !(this.serial_select.IsEnabled);
+				this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);
+
+			};
+ 
 			this.serial_select.DropDownOpened  += (o, a) => {
 				this.serial_select.ItemsSource       = GetSerialDevices();
 				this.serial_select.DisplayMemberPath = "Display";
@@ -88,6 +96,7 @@ namespace RelayControl
 			this.Content = main_grid;
 		}
 		
+        
  		private DataTemplate getDataTemplate(string bind){                                             
 			var T = new FrameworkElementFactory(typeof(TextBlock));
 	        T.SetValue(TextBlock.TextProperty, new Binding(bind));
@@ -151,87 +160,6 @@ namespace RelayControl
 		public string Status  { get; set; }
 		public string Display { get; set; }
 	}
-	
-	public class SerialData{
-		public int    Id      { get; set; }
-		public string Time    { get; set; }
-		public string Status  { get; set; }
-		public string Data    { get; set; }
-	}
-	
-	public class SerialConnection{
-		private SerialPort        connection;
-		static  bool              _continue;
-		public  string            port;
-		public  List<SerialData>  io_list = new List<SerialData>();
-		
-		public  SerialConnection(){
-		}
-		
-		public  SerialConnection(string port, int bual_rate){
-			this.port               = port;
-			connection              = new SerialPort(port, bual_rate, Parity.None, 8, StopBits.One);
-	        connection.ReadTimeout  = 500;  
-	        connection.WriteTimeout = 500; 			
-			_continue               = true;
- 
-			try{
-				if(!connection.IsOpen){connection.Open();}
-				Thread readThread = new Thread(this.ReadLine);
-				readThread.Start();
-			} catch (System.IO.IOException) {
-				MessageBox.Show(String.Format("Port '{0}' is not avaliable", this.port));
-			} catch (System.UnauthorizedAccessException){
-				MessageBox.Show(String.Format("Accessing Port '{0}' is not Unauthorized", this.port));
-			}
-  
- 
-		}
-        
-		public void ReadLine(){  
-			while (_continue){  
-				try{
-					string messages = this.connection.ReadLine();
-					foreach (string message in messages.Split(Environment.NewLine.ToCharArray())){
-						io_list.Add(new SerialData{
-							Id     = io_list.Count,
-							Time   = DateTime.Now.ToString("HH:mm:ss"), 
-							Status = "receieve", 
-							Data   = message
-						});
-						Trace.WriteLine(message);
-					}
-				} catch (System.NullReferenceException){
-					MessageBox.Show("Serial connection not established");					
-				}catch (TimeoutException) { 
- 
-		        }
-			}  
-		} 
-		
-		public void WriteLine(string command){
-			if (command.Length >0){
-				try{
-					this.connection.WriteLine(command); 
-					io_list.Add(new SerialData{
-						Id     = io_list.Count,
-						Time   = DateTime.Now.ToString("HH:mm:ss"), 
-						Status = "send", 
-						Data   = command
-					});
-				} catch (System.NullReferenceException){
-					MessageBox.Show("Serial connection not established");
-				} catch (System.InvalidOperationException) {
-					MessageBox.Show(String.Format("Port '{0}' is not avaliable", this.port));
-				}
-			}
-			
-		}
-		
-		public void Close(){this.connection.Close();}
-	}
-
-    
 	
 		
 }
