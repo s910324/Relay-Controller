@@ -76,13 +76,19 @@ namespace RelayControl
 			this.serial_confirm_pb.Click       += (o, a) => {
 				if (this.connection.IsConnected){
 					this.connection.Close();
-					
+					this.serial_select.IsEnabled = !(this.serial_select.IsEnabled);
+					this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);					
 				} else {
-					this.connection = new SerialConnection(serial_select.SelectedValue.ToString(), (int)bual_select.SelectedValue);
-					this.serial_log_list.ItemsSource = this.connection.io_list;
+				
+					if ((this.serial_select.SelectedIndex != -1) && (this.bual_select.SelectedIndex != -1)){
+						this.connection = new SerialConnection(serial_select.SelectedValue.ToString(), (int)bual_select.SelectedValue);
+						this.serial_log_list.ItemsSource = this.connection.io_list;
+						this.serial_select.IsEnabled = !(this.serial_select.IsEnabled);
+						this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);
+					}
+					
 				}
-				this.serial_select.IsEnabled = !(this.serial_select.IsEnabled);
-				this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);
+				
 
 			};
  
