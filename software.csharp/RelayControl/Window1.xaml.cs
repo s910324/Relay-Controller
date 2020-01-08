@@ -68,27 +68,23 @@ namespace RelayControl
 		            CellTemplate = getDataTemplate(header) 
 		        };
 				gvc.Header = header;
- 
 				gv.Columns.Add(gvc);
 			}
 			
 			this.serial_log_list.View = gv;
 			
 			connection = new SerialConnection("COM3", 19200);
-			this.serial_send_pb.Click += (o, a)=>{this.SerialSend(connection, this.serial_input.Text); };
-			this.serial_confirm_pb.Click += (o, a)=>{
-				SerialConnection n = new SerialConnection(serial_select.SelectedValue.ToString(), (int)bual_select.SelectedValue);
-			};
-
-			this.serial_log_list.ItemsSource = connection.io_list;
-			this.serial_select.DropDownOpened  += (o, a)=>{
+			this.serial_log_list.ItemsSource    = connection.io_list;
+			this.serial_send_pb.Click          += (o, a) => {this.SerialSend(connection, this.serial_input.Text); };
+			this.serial_confirm_pb.Click       += (o, a) => {SerialConnection n = new SerialConnection(serial_select.SelectedValue.ToString(), (int)bual_select.SelectedValue);};
+			this.serial_input.SubmitText       += (o, a) => {Trace.WriteLine(o.ToString());};
+			this.serial_select.DropDownOpened  += (o, a) => {
 				this.serial_select.ItemsSource       = GetSerialDevices();
 				this.serial_select.DisplayMemberPath = "Display";
 				this.serial_select.SelectedValuePath = "COM";
 			};
 
 
-			this.serial_input.TextSubmitEvent +=  ( a)=>{Trace.WriteLine("OKOK");};
 			this.Content = main_grid;
 		}
 		
@@ -139,20 +135,6 @@ namespace RelayControl
             }
             return ListData;
 		}
-	
-//		private void test(){
-//			using (var searcher = new ManagementObjectSearcher("SELECT * FROM WIN32_SerialPort")) {
-//				string[] portnames = SerialPort.GetPortNames();
-//				var ports = searcher.Get().Cast<ManagementBaseObject>().ToList();
-//				Trace.WriteLine("nn");
-//				foreach(var p in ports){
-//					Trace.WriteLine(p["DeviceID"]);
-//					Trace.WriteLine(p["Description"]);
-//				}
-//
-//			}
-//		}
-	
 	}
 			 
 	
