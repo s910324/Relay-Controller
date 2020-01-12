@@ -3,27 +3,25 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Text.RegularExpressions;                  
-using System.Windows.Data;
-using System.Windows.Media;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.Management;
 using UI;
 using SerialConn;
-
+using  System.Windows.Data;
 namespace RelayControl
 {
      
 	public partial class Window1 : Window
 	{
-		private ComboBox         serial_select     = new ComboBox();
-		private ComboBox         bual_select       = new ComboBox();
-		private Button           serial_confirm_pb = new Button();
-		private ListView         serial_log_list   = new ListView();
-		private SubmitTextBox    serial_input      = new SubmitTextBox();
-		private Button           serial_send_pb    = new Button();
-		private SerialConnection connection        = new SerialConnection();
+		private ComboBox                       serial_select     = new ComboBox();
+		private ComboBox                       bual_select       = new ComboBox();
+		private Button                         serial_confirm_pb = new Button();
+		private UIListView<SerialData>         serial_log_list   = new UIListView<SerialData>();
+		private SubmitTextBox                  serial_input      = new SubmitTextBox();
+		private Button                         serial_send_pb    = new Button();
+		private SerialConnection               connection        = new SerialConnection();
 		public Window1(){
 			InitializeComponent();
 			InitializeUserInterface();
@@ -40,7 +38,9 @@ namespace RelayControl
 			Grid       serial_send_grid     = new HBox(serial_input, serial_send_pb).setGeomertries("*", "auto").setSpacing(5);
 			VBox       main_grid            = new VBox(serial_port_grid, serial_log_list, serial_send_grid).setGeomertries("auto", "*", "auto").setSpacing(5).setMargin(5);
 			
+			
 			List<BualComboData> bualrates   = new List<BualComboData>();
+			       
 			this.bual_select.ItemsSource         = bualrates;
 			this.bual_select.DisplayMemberPath   = "Display";
 			this.bual_select.SelectedValuePath   = "Bual";
@@ -58,26 +58,13 @@ namespace RelayControl
 				i++;
 			}
 			
- 
-			GridView gv = new GridView();		
-			foreach (string header in new string[] {"Id", "Time", "Status", "Data"}){
-				GridViewColumn gvc = new GridViewColumn {
-		            Header = header,      
-		            CellTemplate = getDataTemplate(header) 
-		        };
-				gvc.Header = header;
-				gv.Columns.Add(gvc);
-			}
-			
-			this.serial_log_list.View = gv;
-
 			this.serial_send_pb.Click          += (o, a) => {this.SerialSend(this.connection,  this.serial_input.Text); this.serial_input.Clear();};
 			this.serial_input.SubmitText       += (o, a) => {this.SerialSend(this.connection, ((SubmitTextBox)o).Text); this.serial_input.Clear();};
 			this.serial_confirm_pb.Click       += (o, a) => {
 				if (this.connection.IsConnected){
 					this.connection.Close();
 					this.serial_select.IsEnabled = !(this.serial_select.IsEnabled);
-					this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);					
+					this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);
 				} else {
 				
 					if ((this.serial_select.SelectedIndex != -1) && (this.bual_select.SelectedIndex != -1)){
@@ -86,10 +73,7 @@ namespace RelayControl
 						this.serial_select.IsEnabled = !(this.serial_select.IsEnabled);
 						this.bual_select.IsEnabled   = !(this.bual_select.IsEnabled);
 					}
-					
 				}
-				
-
 			};
  
 			this.serial_select.DropDownOpened  += (o, a) => {
@@ -97,21 +81,7 @@ namespace RelayControl
 				this.serial_select.DisplayMemberPath = "Display";
 				this.serial_select.SelectedValuePath = "COM";
 			};
-
-
 			this.Content = main_grid;
-		}
-		
-        
- 		private DataTemplate getDataTemplate(string bind){                                             
-			var T = new FrameworkElementFactory(typeof(TextBlock));
-	        T.SetValue(TextBlock.TextProperty, new Binding(bind));
-	        T.SetValue(TextBlock.FontFamilyProperty, new FontFamily("Lucida Console"));
-	        T.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(Color.FromRgb(50, 50, 50)));
-	        T.SetValue(TextBlock.FontSizeProperty, 12.0);
-	        var template = new DataTemplate();            
-	        template.VisualTree = T;								 
-	        return template;
 		}
 		
      	private void SerialSend(SerialConnection conn, string command ){
@@ -120,7 +90,6 @@ namespace RelayControl
 			} catch (System.NullReferenceException){
 				MessageBox.Show("Serial connection not established");
 			}
-			 
 		}
    
 		private List<PortComboData> GetSerialDevices(){
